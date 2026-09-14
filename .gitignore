@@ -34,3 +34,5 @@ listing-sources/urls/
 test-listing/*.jpg
 test-listing/*.jpeg
 test-listing/*.png
+test-listing/*.json
+.claude/launch.json
