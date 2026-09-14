@@ -97,6 +97,26 @@ select{
 .filebtn{cursor:pointer}
 .filebtn input{position:absolute;opacity:0;pointer-events:none}
 
+/* upload dropzone */
+.dropzone{
+  display:block;position:relative;border:1px dashed var(--hair);border-radius:12px;
+  padding:1.1rem 1rem;margin:.2rem 0 .8rem;text-align:center;cursor:pointer;
+  transition:border-color .15s ease,background .15s ease;
+}
+.dropzone input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;pointer-events:none}
+.dropzone .dz-title{
+  display:block;font-size:.95rem;font-weight:600;color:var(--paper);margin-bottom:.25rem;
+}
+.dropzone .dz-hint{display:block;font-size:.8rem;color:var(--muted)}
+.dropzone.over{border-color:var(--gold);background:rgba(242,178,52,.06)}
+.dropzone.over .dz-hint{color:var(--gold)}
+.mine-tag{
+  font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);
+  border:1px solid rgba(242,178,52,.55);border-radius:999px;padding:.12rem .55rem;
+  margin-left:.5rem;vertical-align:middle;white-space:nowrap;
+}
+.priv{color:var(--muted);font-size:.8rem;line-height:1.5;margin:.7rem 0 0}
+
 /* preview */
 .stage{position:relative;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--hair2)}
 .stage canvas{display:block;width:100%;aspect-ratio:16/9}
@@ -163,7 +183,7 @@ footer{padding:2.2rem 0 3rem;text-align:center}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="back" href="./">&#8592; Walkthru</a></div>
+  <div class="top" style="display:flex;justify-content:space-between;gap:.6rem"><a class="back" href="./">&#8592; Walkthru</a><a class="back" href="./3d.html">3D tour &#8594;</a></div>
   <header class="hero">
     <p class="kicker">Walkthru Studio</p>
     <h1>Your photos. In motion.</h1>
@@ -174,12 +194,18 @@ footer{padding:2.2rem 0 3rem;text-align:center}
 
   <section id="shots">
     <h2>Shot list</h2>
-    <p class="note">Demo photos ship with the page. Order them with the arrows, set seconds per shot, pick the camera move.</p>
+    <p class="note">Demo photos ship with the page. Add your own listing photos — order with the arrows, set seconds per shot, pick the camera move.</p>
     <ol id="shotList"></ol>
+    <label class="dropzone" id="dropzone">
+      <span class="dz-title">Upload listing photos</span>
+      <span class="dz-hint">Tap to pick from your phone, or drop images here</span>
+      <input id="addFiles" type="file" accept="image/*" multiple />
+    </label>
     <div class="row">
-      <label class="btn filebtn">Add photos<input id="addFiles" type="file" accept="image/*" multiple /></label>
+      <button class="btn" id="clearMine" type="button">Clear my photos</button>
       <button class="btn" id="resetShots" type="button">Restore demo shots</button>
     </div>
+    <p class="priv">Your photos never leave this device. They live in this page only.</p>
   </section>
 
   <section id="preview">
@@ -280,7 +306,14 @@ function renderShots() {
     const body = document.createElement('div');
     body.className = 'shot-body';
     const name = document.createElement('div');
-    name.className = 'shot-name'; name.textContent = s.name;
+    name.className = 'shot-name';
+    name.appendChild(document.createTextNode(s.name));
+    if (s.mine) {
+      const tag = document.createElement('span');
+      tag.className = 'mine-tag';
+      tag.textContent = 'Yours';
+      name.appendChild(tag);
+    }
     const ctl = document.createElement('div');
     ctl.className = 'shot-ctl';
 
@@ -312,6 +345,7 @@ function renderShots() {
     rm.setAttribute('aria-label', 'Remove ' + s.name);
     rm.addEventListener('click', () => {
       if (shots.length <= 1) return;
+      revokeShot(shots[i]);
       shots.splice(i, 1); stopPlay(); renderShots();
     });
 
@@ -335,20 +369,65 @@ function moveShot(i, d) {
   [shots[i], shots[j]] = [shots[j], shots[i]];
   stopPlay(); renderShots();
 }
+function revokeShot(s) {
+  if (s && s.src && s.src.indexOf('blob:') === 0) {
+    try { URL.revokeObjectURL(s.src); } catch (e) { /* already gone */ }
+  }
+}
+function addUploads(files) {
+  let added = 0;
+  [...files].forEach((f) => {
+    if (!f.type || !f.type.startsWith('image/')) return;
+    shots.push({
+      id: ++uid, src: URL.createObjectURL(f),
+      name: (f.name || 'Photo').replace(/\.[^.]+$/, ''),
+      dur: 4, move: 'in', mine: true,
+    });
+    added++;
+  });
+  return added;
+}
 function totalDur(list) { return list.reduce((a, s) => a + s.dur, 0); }
 function updateTotal() {
   $('pstat').textContent = shots.length + ' shots · ' + totalDur(shots) + 's total';
+  const cm = $('clearMine');
+  if (cm) cm.disabled = !shots.some((s) => s.mine);
 }
 
 $('addFiles').addEventListener('change', (e) => {
-  [...e.target.files].forEach((f) => {
-    if (!f.type.startsWith('image/')) return;
-    shots.push({ id: ++uid, src: URL.createObjectURL(f), name: f.name.replace(/\.[^.]+$/, ''), dur: 4, move: 'in' });
-  });
+  addUploads(e.target.files);
   e.target.value = '';
   stopPlay(); renderShots();
 });
-$('resetShots').addEventListener('click', () => { shots = demoShots(); stopPlay(); renderShots(); });
+
+/* drag-and-drop onto the upload zone (desktop); tap = phone picker (mobile) */
+(function () {
+  const dz = $('dropzone');
+  if (!dz) return;
+  let depth = 0;
+  dz.addEventListener('dragenter', (e) => { e.preventDefault(); depth++; dz.classList.add('over'); });
+  dz.addEventListener('dragover', (e) => { e.preventDefault(); });
+  dz.addEventListener('dragleave', (e) => { e.preventDefault(); depth = Math.max(0, depth - 1); if (!depth) dz.classList.remove('over'); });
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault(); depth = 0; dz.classList.remove('over');
+    const dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length) {
+      addUploads(dt.files);
+      stopPlay(); renderShots();
+    }
+  });
+  /* Never let a stray drop navigate the page away mid-session. */
+  ['dragover', 'drop'].forEach((ev) => window.addEventListener(ev, (e) => e.preventDefault()));
+})();
+
+$('clearMine').addEventListener('click', () => {
+  const mine = shots.filter((s) => s.mine);
+  if (!mine.length) return;
+  mine.forEach(revokeShot);
+  shots = shots.filter((s) => !s.mine);
+  stopPlay(); renderShots();
+});
+$('resetShots').addEventListener('click', () => { shots.forEach(revokeShot); shots = demoShots(); stopPlay(); renderShots(); });
 
 /* ---------- Ken Burns preview engine ---------- */
 const canvas = $('stage');
