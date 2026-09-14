@@ -19,11 +19,11 @@
     "sass-embedded": "^1.104.0",
     "svelte": "^5.57.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2",
+    "vite": "^8.3.0",
     "vitest": "^5.0.0"
   },
   "dependencies": {
-    "@lucide/svelte": "^1.43.0",
+    "@lucide/svelte": "^1.45.0",
     "@sparkjsdev/spark": "^2.2.0",
     "svelte-i18n": "^4.0.1"
   }
