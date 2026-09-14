@@ -123,7 +123,23 @@
     </div>
   </section>
 
-  <!-- 4 · FINAL CTA + BADGE -->
+  <!-- 4 · LIVE DEMOS -->
+  <section class="panel" aria-label="Live demos">
+    <div class="pbg g-demo" aria-hidden="true"></div>
+    <div class="scrim s-demo" aria-hidden="true"></div>
+    <div class="giant" aria-hidden="true">LIVE</div>
+    <div class="content c-demo">
+      <p class="kicker rv">Don't take our word for it.</p>
+      <h2 class="h-display rv" style="--d:.08s">Walk it<br />yourself.</h2>
+      <p class="sub rv" style="--d:.16s">A real room, rendered live in your browser.</p>
+      <div class="demo-ctas rv" style="--d:.24s">
+        <a class="cta-btn" href="tour.html">Take the 3D tour</a>
+        <a class="cta-ghost" href="studio.html">Open the Studio</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · FINAL CTA + BADGE -->
   <section class="panel" aria-label="Get your video">
     <div class="pbg g-cta" aria-hidden="true"></div>
     <div class="scrim s-cta" aria-hidden="true"></div>

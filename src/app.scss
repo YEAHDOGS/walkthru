@@ -89,6 +89,7 @@ body {
 .c-hero { justify-content: center; align-items: flex-start; text-align: left; }
 .c-pricing { justify-content: center; align-items: center; text-align: center; }
 .c-how { justify-content: center; align-items: flex-start; text-align: left; }
+.c-demo { justify-content: flex-end; align-items: flex-start; text-align: left; padding-bottom: clamp(4rem, 12vh, 7rem); }
 .c-final { justify-content: center; align-items: center; text-align: center; gap: 0.5rem; }
 
 /* ---------- type ---------- */
@@ -187,11 +188,18 @@ body {
     radial-gradient(70% 55% at 50% 40%, rgba(242, 178, 52, 0.25), transparent 70%),
     #0a0906;
 }
+.g-demo {
+  background:
+    radial-gradient(60% 45% at 80% 80%, rgba(242, 178, 52, 0.16), transparent 70%),
+    radial-gradient(55% 45% at 15% 15%, rgba(120, 110, 95, 0.14), transparent 70%),
+    #0b0a08;
+}
 
 .s-hero { background: linear-gradient(180deg, rgba(10,10,12,.5), rgba(10,10,12,.1) 45%, rgba(10,10,12,.6)); }
 .s-pricing { background: linear-gradient(180deg, rgba(12,11,9,.6), rgba(12,11,9,.25) 50%, rgba(12,11,9,.6)); }
 .s-how { background: linear-gradient(180deg, rgba(11,10,8,.45), rgba(11,10,8,.1) 45%, rgba(11,10,8,.55)); }
 .s-cta { background: linear-gradient(180deg, rgba(10,9,6,.4), rgba(10,9,6,.05) 45%, rgba(10,9,6,.6)); }
+.s-demo { background: linear-gradient(180deg, rgba(11,10,8,.55), rgba(11,10,8,.1) 45%, rgba(11,10,8,.65)); }
 
 /* ---------- pricing: 3 columns at EVERY width ---------- */
 .tiers {
@@ -312,6 +320,29 @@ body {
   transition: transform 0.2s ease;
 }
 .cta-btn:hover { transform: scale(1.04); }
+
+/* ---------- demo panel CTAs ---------- */
+.demo-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.demo-ctas .cta-btn { min-height: 44px; }
+.cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 1rem 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 242, 234, 0.35);
+  color: var(--paper);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.cta-ghost:hover { transform: scale(1.04); border-color: var(--gold); }
 
 /* ---------- badge: reveal-free, always visible ---------- */
 .badge {
