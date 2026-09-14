@@ -134,6 +134,7 @@
       <p class="sub rv" style="--d:.16s">A real room, rendered live in your browser.</p>
       <div class="demo-ctas rv" style="--d:.24s">
         <a class="cta-btn" href="tour.html">Take the 3D tour</a>
+        <a class="cta-ghost" href="demo.html">Demo Walkthrough</a>
         <a class="cta-ghost" href="studio.html">Open the Studio</a>
       </div>
     </div>
