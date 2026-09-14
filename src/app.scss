@@ -1,4 +1,4 @@
-// Walkthru landing styles
+// Walkthru landing styles — 4 panels, condensed
 @use "./styles/variables" as *;
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
@@ -61,12 +61,12 @@ body {
 .giant {
   position: absolute;
   z-index: 1;
-  bottom: 1.5rem;
+  bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
   font-weight: 700;
-  font-size: clamp(4rem, 24vw, 18rem);
+  font-size: clamp(3.5rem, 20vw, 15rem);
   line-height: 1;
   color: transparent;
   -webkit-text-stroke: 1px rgba(245, 242, 234, 0.16);
@@ -80,20 +80,16 @@ body {
   width: 100%;
   max-width: 72rem;
   margin: 0 auto;
-  padding: clamp(1.25rem, 4vw, 3rem);
+  padding: clamp(1rem, 3vw, 2rem);
   display: flex;
   flex-direction: column;
 }
 
-.c-top-left { justify-content: flex-start; padding-top: 16vh; text-align: left; }
-.c-bottom-left { justify-content: flex-end; padding-bottom: 16vh; text-align: left; }
-.c-mid-right { justify-content: center; align-items: flex-end; text-align: right; }
-.c-top-right { justify-content: flex-start; padding-top: 12vh; align-items: flex-end; text-align: right; }
-.c-mid-left { justify-content: center; align-items: flex-start; text-align: left; }
-.c-center { justify-content: center; align-items: center; text-align: center; }
-.c-pricing { justify-content: center; align-items: center; text-align: center; padding-top: 10vh; padding-bottom: 8vh; }
-.c-tour3d { justify-content: space-between; padding-top: 10vh; padding-bottom: 8vh; }
-.c-tour3d .c-top-left { padding-top: 0; align-self: flex-start; }
+/* tight content anchors — no dead space */
+.c-hero { justify-content: center; align-items: flex-start; text-align: left; }
+.c-pricing { justify-content: center; align-items: center; text-align: center; }
+.c-how { justify-content: center; align-items: flex-start; text-align: left; }
+.c-final { justify-content: center; align-items: center; text-align: center; gap: 0.5rem; }
 
 /* ---------- type ---------- */
 .h-display {
@@ -101,14 +97,14 @@ body {
   line-height: 0.95;
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin: 0 0 1rem;
+  margin: 0 0 0.9rem;
 }
 
 .h-section {
-  font-size: clamp(2rem, 7vw, 3.5rem);
+  font-size: clamp(1.6rem, 6vw, 3rem);
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin: 0 0 2rem;
+  margin: 0 0 1.25rem;
   line-height: 1;
 }
 
@@ -117,7 +113,7 @@ body {
   letter-spacing: 0.35em;
   text-transform: uppercase;
   color: var(--gold);
-  margin: 0 0 1rem;
+  margin: 0 0 0.8rem;
   font-weight: 600;
 }
 
@@ -126,26 +122,10 @@ body {
   color: var(--paper);
   opacity: 0.85;
   line-height: 1.45;
-  margin: 0;
+  margin: 0 0 1.5rem;
 }
 
-.fine {
-  font-size: 0.85rem;
-  letter-spacing: 0.2em;
-  color: var(--muted);
-  margin: 1rem 0 0;
-  text-transform: uppercase;
-}
-
-.tier-price {
-  font-size: clamp(3rem, 12vw, 5rem);
-  font-weight: 700;
-  color: var(--gold);
-  margin: 0 0 0.5rem;
-  line-height: 1;
-}
-
-/* ---------- reveals (text only) ---------- */
+/* ---------- reveals (text only — NEVER on <img> wrappers) ---------- */
 .rv {
   opacity: 0;
   transform: translateY(30px);
@@ -191,30 +171,6 @@ body {
     radial-gradient(80% 60% at 20% 90%, rgba(242, 178, 52, 0.08), transparent 70%),
     #0a0a0c;
 }
-.g-problem {
-  background:
-    radial-gradient(65% 50% at 25% 25%, rgba(200, 70, 40, 0.25), transparent 70%),
-    radial-gradient(70% 55% at 85% 85%, rgba(160, 40, 30, 0.12), transparent 70%),
-    #0b0908;
-}
-.g-teaser {
-  background:
-    radial-gradient(60% 45% at 80% 80%, rgba(90, 110, 255, 0.22), transparent 70%),
-    radial-gradient(70% 55% at 15% 15%, rgba(90, 110, 255, 0.1), transparent 70%),
-    #090a0e;
-}
-.g-walk {
-  background:
-    radial-gradient(60% 45% at 20% 20%, rgba(40, 180, 120, 0.2), transparent 70%),
-    radial-gradient(75% 60% at 85% 85%, rgba(40, 180, 120, 0.09), transparent 70%),
-    #080b0a;
-}
-.g-tour3d {
-  background:
-    radial-gradient(60% 45% at 75% 80%, rgba(150, 90, 255, 0.22), transparent 70%),
-    radial-gradient(70% 55% at 15% 15%, rgba(150, 90, 255, 0.1), transparent 70%),
-    #0a090e;
-}
 .g-pricing {
   background:
     radial-gradient(70% 50% at 50% 0%, rgba(242, 178, 52, 0.12), transparent 70%),
@@ -233,90 +189,56 @@ body {
 }
 
 .s-hero { background: linear-gradient(180deg, rgba(10,10,12,.5), rgba(10,10,12,.1) 45%, rgba(10,10,12,.6)); }
-.s-problem { background: linear-gradient(180deg, rgba(11,9,8,.35), rgba(11,9,8,.1) 40%, rgba(11,9,8,.7)); }
-.s-teaser { background: linear-gradient(180deg, rgba(9,10,14,.35), rgba(9,10,14,.1) 45%, rgba(9,10,14,.6)); }
-.s-walk { background: linear-gradient(180deg, rgba(8,11,10,.55), rgba(8,11,10,.15) 45%, rgba(8,11,10,.55)); }
-.s-tour3d { background: linear-gradient(180deg, rgba(10,9,14,.5), rgba(10,9,14,.1) 45%, rgba(10,9,14,.65)); }
 .s-pricing { background: linear-gradient(180deg, rgba(12,11,9,.6), rgba(12,11,9,.25) 50%, rgba(12,11,9,.6)); }
 .s-how { background: linear-gradient(180deg, rgba(11,10,8,.45), rgba(11,10,8,.1) 45%, rgba(11,10,8,.55)); }
 .s-cta { background: linear-gradient(180deg, rgba(10,9,6,.4), rgba(10,9,6,.05) 45%, rgba(10,9,6,.6)); }
 
-/* ---------- 3D tour placeholder ---------- */
-.tour-frame {
-  margin-top: 2rem;
-  border: 1px dashed rgba(242, 178, 52, 0.5);
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 2rem 1.5rem;
-  text-align: center;
-  max-width: 26rem;
-  align-self: center;
-}
-.tour-mono {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 1rem;
-  background: rgba(242, 178, 52, 0.14);
-  color: var(--gold);
-  font-weight: 700;
-  font-size: 1.25rem;
-  margin-bottom: 1rem;
-}
-.tour-label {
-  letter-spacing: 0.3em;
-  font-size: 0.75rem;
-  color: var(--gold);
-  margin: 0 0 0.75rem;
-  font-weight: 600;
-}
-.tour-sub { margin: 0 0 0.5rem; font-size: 1rem; }
-.tour-note { margin: 0; color: var(--muted); font-size: 0.85rem; }
-
-/* ---------- pricing ---------- */
+/* ---------- pricing: 3 columns at EVERY width ---------- */
 .tiers {
   display: grid;
-  gap: 1rem;
+  gap: 0.6rem;
   width: 100%;
   max-width: 64rem;
-  grid-template-columns: 1fr;
-}
-@media (min-width: 900px) {
-  .tiers { grid-template-columns: repeat(3, 1fr); }
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .tier {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(245, 242, 234, 0.12);
-  border-radius: 1.25rem;
-  padding: 1.75rem 1.5rem;
+  border-radius: 1rem;
+  padding: 1.1rem 0.7rem;
   text-align: left;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
-.tier h3 { margin: 0; font-size: 1.35rem; font-weight: 700; }
-.tier-tag { color: var(--muted); font-size: 0.9rem; margin: 0.25rem 0 1rem; }
-.tier-amt {
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--gold);
-  margin: 0 0 1rem;
+.tier h3 { margin: 0; font-size: 0.82rem; font-weight: 700; line-height: 1.25; }
+.tier-tag { color: var(--muted); font-size: 0.72rem; margin: 0.2rem 0 0.7rem; line-height: 1.3; }
+.tier-anchor {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
   line-height: 1;
 }
-.tier-amt span { font-size: 1.5rem; vertical-align: top; }
+.tier-anchor s { text-decoration-thickness: 1.5px; }
+.tier-amt {
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin: 0.1rem 0 0.8rem;
+  line-height: 1;
+}
+.tier-amt span { font-size: 1.1rem; vertical-align: top; }
 .tier ul {
   list-style: none;
   padding: 0;
-  margin: 0 0 1.5rem;
+  margin: 0 0 1rem;
   display: grid;
-  gap: 0.6rem;
-  font-size: 0.95rem;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
   color: rgba(245, 242, 234, 0.85);
 }
 .tier li::before { content: "— "; color: var(--gold); }
@@ -324,44 +246,62 @@ body {
   margin-top: auto;
   display: inline-block;
   text-align: center;
-  padding: 0.8rem 1.2rem;
+  padding: 0.6rem 0.3rem;
   border: 1px solid var(--gold);
   border-radius: 999px;
   color: var(--gold);
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.58rem;
+  white-space: nowrap;
   transition: background 0.2s ease, color 0.2s ease;
 }
 .tier-cta:hover { background: var(--gold); color: var(--ink); }
 
-.retainer { margin: 1.75rem 0 0; color: var(--muted); font-size: 1rem; }
+@media (min-width: 900px) {
+  .tier { padding: 1.75rem 1.5rem; border-radius: 1.25rem; }
+  .tier h3 { font-size: 1.35rem; }
+  .tier-tag { font-size: 0.9rem; margin: 0.25rem 0 1rem; }
+  .tier-anchor { font-size: 1.2rem; }
+  .tier-amt { font-size: 3rem; margin: 0.15rem 0 1rem; }
+  .tier-amt span { font-size: 1.5rem; }
+  .tier ul { font-size: 0.95rem; gap: 0.6rem; margin-bottom: 1.5rem; }
+  .tier-cta { font-size: 1rem; padding: 0.8rem 1.2rem; }
+  .tiers { gap: 1rem; }
+}
+
+.retainer { margin: 1.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
 .retainer a { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
 
-/* ---------- steps ---------- */
+/* ---------- steps: tight row on desktop, compact stack on phone ---------- */
 .steps {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 1.75rem;
-  max-width: 34rem;
+  gap: 1.1rem;
+  width: 100%;
+  max-width: 64rem;
 }
-.step { display: flex; gap: 1.25rem; align-items: flex-start; }
+@media (min-width: 900px) {
+  .steps-row { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+}
+.step { display: flex; gap: 0.9rem; align-items: flex-start; }
 .step-n {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: transparent;
   -webkit-text-stroke: 1px var(--gold);
   line-height: 1;
   flex-shrink: 0;
 }
-.step h3 { margin: 0 0 0.35rem; font-size: 1.3rem; }
-.step p { margin: 0; color: var(--muted); }
+.step h3 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+.step p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.4; }
 
 /* ---------- CTA ---------- */
 .cta-btn {
   display: inline-block;
-  margin-top: 1.75rem;
+  margin-top: 0;
   padding: 1rem 2.5rem;
   border-radius: 999px;
   background: var(--gold);
@@ -373,11 +313,22 @@ body {
 }
 .cta-btn:hover { transform: scale(1.04); }
 
-.foot { margin: 3rem 0 0; font-size: 0.85rem; }
-.foot a {
-  color: var(--muted);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(168, 162, 154, 0.4);
+/* ---------- badge: reveal-free, always visible ---------- */
+.badge {
+  display: block;
+  width: 220px;
+  max-width: 60vw;
+  margin: 2.25rem auto 0;
+  line-height: 0;
+}
+.badge img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+}
+@media (min-width: 900px) {
+  .badge { width: 260px; }
 }
 
 /* ---------- reduced motion ---------- */

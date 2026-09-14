@@ -15,6 +15,8 @@ export const TIERS = [
   {
     name: 'The Teaser',
     price: 99,
+    anchor: 300,
+    cta: 'Get Teaser',
     tag: '30-second AI video',
     points: [
       '30-second video from your listing photos',
@@ -25,17 +27,20 @@ export const TIERS = [
   {
     name: 'The Walkthrough',
     price: 299,
+    anchor: 500,
+    cta: 'Get Walkthrough',
     tag: '60-second cinematic video',
     points: [
       '60-second cinematic tour',
       'Vertical cuts for TikTok, Reels & Shorts',
       'Everything in The Teaser',
-      'Delivered in 72 hours',
     ],
   },
   {
     name: 'The 3D Tour',
     price: 599,
+    anchor: 999,
+    cta: 'Get 3D Tour',
     tag: 'Video + interactive 3D',
     points: [
       'Interactive, walkable 3D model of your space',
