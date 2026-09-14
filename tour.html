@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0c" />
+  <title>3D Tour — Walkthru by DOGS</title>
+  <meta name="description" content="Walk through a real space in 3D. Drag to look, WASD to move." />
+  <!--
+    Sample scene: splat_quest.ply — a room scan bundled with kumodot/splat-tools,
+    MIT licensed (see repo LICENSE). Vendored so the demo never hotlinks.
+    3D engine: @sparkjsdev/spark (MIT) + three.js (MIT), both vendored locally —
+    no CDN, no runtime network beyond this page's own files.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script type="importmap">
+  {"imports":{
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/",
+    "@sparkjsdev/spark": "./vendor/spark/spark.module.js"
+  }}
+  </script>
+  <style>
+    :root {
+      --ink: #0a0a0c;
+      --paper: #f5f2ea;
+      --muted: #a8a29a;
+      --gold: #f2b234;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: var(--ink); color: var(--paper);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      overflow: hidden; overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #stage { position: fixed; inset: 0; }
+    #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+    /* ---------- top bar ---------- */
+    .bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.5rem; padding: calc(0.6rem + env(safe-area-inset-top)) 0.8rem 0.6rem;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(10,10,12,.72), transparent);
+    }
+    .bar > * { pointer-events: auto; }
+    .title { line-height: 1.1; user-select: none; }
+    .title .k {
+      display: block; font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.32em; color: var(--gold); text-transform: uppercase;
+    }
+    .title .t { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+    .topbtns { display: flex; align-items: center; gap: 0.5rem; }
+
+    .iconbtn {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 1px solid rgba(245,242,234,.16);
+      background: rgba(10,10,12,.72); color: var(--paper);
+      display: grid; place-items: center; cursor: pointer;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      font: inherit; font-size: 1.05rem; text-decoration: none;
+    }
+    .iconbtn:active { transform: scale(0.94); }
+    .iconbtn[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+
+    /* ---------- bottom-right control cluster ---------- */
+    .cluster {
+      position: fixed; right: 0.8rem;
+      bottom: calc(0.8rem + env(safe-area-inset-bottom)); z-index: 20;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .seg {
+      display: flex; background: rgba(10,10,12,.72);
+      border: 1px solid rgba(245,242,234,.16); border-radius: 999px; padding: 3px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .seg button {
+      min-width: 44px; min-height: 44px; padding: 0 0.9rem;
+      border: 0; border-radius: 999px; background: transparent;
+      color: var(--muted); font: inherit; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer;
+    }
+    .seg button[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
+
+    /* ---------- hint ---------- */
+    .hint {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: calc(4.6rem + env(safe-area-inset-bottom)); z-index: 20;
+      max-width: 92vw; text-align: center;
+      font-size: 0.8rem; color: var(--paper);
+      background: rgba(10,10,12,.66); border: 1px solid rgba(245,242,234,.12);
+      border-radius: 999px; padding: 0.55rem 1rem;
+      pointer-events: none; white-space: nowrap;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.4s ease;
+    }
+    .hint.gone { opacity: 0; }
+    .hint.above-map { bottom: calc(11.9rem + env(safe-area-inset-bottom)); }
+
+    /* ---------- crosshair (walk mode) ---------- */
+    .dot {
+      position: fixed; left: 50%; top: 50%; z-index: 15;
+      width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+      background: var(--gold); opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .dot.on { opacity: 0.9; }
+
+    /* ---------- joystick ---------- */
+    .stick {
+      position: fixed; z-index: 25; width: 110px; height: 110px; margin: -55px 0 0 -55px;
+      border: 1.5px solid rgba(242,178,52,.55); border-radius: 50%;
+      background: rgba(10,10,12,.35); display: none; pointer-events: none;
+    }
+    .stick .knob {
+      position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+      border-radius: 50%; background: var(--gold);
+    }
+
+    /* ---------- minimap ---------- */
+    .minimap {
+      position: fixed; left: 0.8rem; z-index: 20;
+      bottom: calc(3.4rem + env(safe-area-inset-bottom));
+      width: 120px; height: 120px; border-radius: 14px;
+      background: rgba(10,10,12,.66); border: 1px solid rgba(245,242,234,.12);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .minimap.on { opacity: 1; }
+    .minimap canvas { width: 120px; height: 120px; display: block; }
+
+    /* ---------- loader ---------- */
+    .loader {
+      position: fixed; inset: 0; z-index: 40; background: var(--ink);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 1rem; padding: 2rem; text-align: center;
+      transition: opacity 0.5s ease;
+    }
+    .loader.done { opacity: 0; pointer-events: none; }
+    .loader .k {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.32em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .loader h1 { margin: 0; font-size: clamp(1.8rem, 8vw, 3rem); letter-spacing: -0.02em; }
+    .loader p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    .track {
+      width: min(320px, 70vw); height: 4px; border-radius: 999px;
+      background: rgba(245,242,234,.12); overflow: hidden;
+    }
+    .fill {
+      height: 100%; width: 0%; border-radius: 999px; background: var(--gold);
+      transition: width 0.2s ease;
+    }
+    .pct { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* ---------- help overlay ---------- */
+    .help {
+      position: fixed; inset: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: center; padding: 1.25rem;
+      background: rgba(5,5,7,.72);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      opacity: 1; transition: opacity 0.35s ease;
+    }
+    .help[hidden] { display: none; }
+    .help.fading { opacity: 0; }
+    .card {
+      width: min(400px, 100%); background: #111114;
+      border: 1px solid rgba(245,242,234,.14); border-radius: 1.1rem;
+      padding: 1.5rem 1.4rem 1.3rem;
+      max-height: 86svh; overflow-y: auto;
+    }
+    .card h2 { margin: 0 0 0.2rem; font-size: 1.25rem; letter-spacing: -0.01em; }
+    .card .lede { margin: 0 0 1rem; color: var(--muted); font-size: 0.9rem; }
+    .card ul { list-style: none; margin: 0 0 1.25rem; padding: 0; display: grid; gap: 0.7rem; }
+    .card li { font-size: 0.9rem; line-height: 1.4; display: flex; gap: 0.6rem; }
+    .card li b { color: var(--gold); font-weight: 600; white-space: nowrap; min-width: 4.6rem; }
+    .card .note { color: var(--muted); font-size: 0.82rem; }
+    .card .close {
+      width: 100%; min-height: 48px; border: 0; border-radius: 999px;
+      background: var(--gold); color: var(--ink);
+      font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer;
+    }
+
+    /* ---------- error ---------- */
+    .err {
+      position: fixed; inset: 0; z-index: 50; background: var(--ink);
+      display: flex; flex-direction: column; gap: 1rem;
+      align-items: center; justify-content: center; padding: 2rem; text-align: center;
+    }
+    .err[hidden] { display: none; }
+    .err h1 { margin: 0; font-size: 1.6rem; }
+    .err p { margin: 0; color: var(--muted); max-width: 30ch; }
+    .err button {
+      min-height: 48px; padding: 0 2rem; border: 0; border-radius: 999px;
+      background: var(--gold); color: var(--ink);
+      font: inherit; font-weight: 700; cursor: pointer;
+    }
+
+    /* ---------- badge: reveal-free, always visible ---------- */
+    .badge {
+      position: fixed; left: 0.8rem; bottom: calc(0.8rem + env(safe-area-inset-bottom));
+      z-index: 20; display: block; width: 104px; line-height: 0;
+    }
+    .badge img { width: 100%; height: auto; display: block; border-radius: 5px; }
+
+    @media (min-width: 700px) {
+      .title .t { font-size: 1.25rem; }
+      .badge { width: 132px; }
+      .hint { bottom: calc(5rem + env(safe-area-inset-bottom)); }
+      .hint.above-map { bottom: calc(11.9rem + env(safe-area-inset-bottom)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .loader, .hint, .dot, .help, .minimap { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="stage" aria-label="3D room viewer"></div>
+  <div class="dot" id="dot" aria-hidden="true"></div>
+
+  <header class="bar">
+    <div class="title">
+      <span class="k">Walkthru</span>
+      <span class="t">3D tour</span>
+    </div>
+    <div class="topbtns">
+      <button class="iconbtn" id="fs" aria-label="Toggle fullscreen">⛶</button>
+      <a class="iconbtn" href="./" aria-label="Back to Walkthru">✕</a>
+    </div>
+  </header>
+
+  <div class="cluster" role="group" aria-label="Viewer controls">
+    <div class="seg" role="group" aria-label="Camera mode">
+      <button id="mExplore" aria-pressed="true">Explore</button>
+      <button id="mWalk" aria-pressed="false">Walk</button>
+    </div>
+    <button class="iconbtn" id="doll" aria-label="Dollhouse view" aria-pressed="false" title="Dollhouse view">⧉</button>
+    <button class="iconbtn" id="helpBtn" aria-label="Show controls">?</button>
+  </div>
+
+  <div class="minimap" id="minimap" aria-label="Minimap: your position in the room" aria-hidden="true">
+    <canvas id="mmc" width="240" height="240"></canvas>
+  </div>
+
+  <div class="hint" id="hint" role="status"></div>
+  <div class="stick" id="stick" aria-hidden="true"><div class="knob" id="knob"></div></div>
+
+  <div class="loader" id="loader">
+    <span class="k">Walkthru</span>
+    <h1>The room, in 3D.</h1>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <p class="pct" id="pct">Warming up…</p>
+  </div>
+
+  <div class="help" id="help" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="helpT">
+      <h2 id="helpT">How to move</h2>
+      <p class="lede">Three ways around the room.</p>
+      <ul>
+        <li><b>Explore</b><span>Drag to orbit. Scroll or pinch to zoom. Right-drag to pan.</span></li>
+        <li><b>Walk</b><span>WASD or arrow keys to move. Drag to look. On touch: left thumb moves, right thumb looks.</span></li>
+        <li><b>Dollhouse</b><span>Zooms out to the whole scan, like a model. Tap again to fly back.</span></li>
+      </ul>
+      <p class="note">Heads up: exterior views of an interior scan can look rough. That's the scan, not the viewer.</p>
+      <button class="close" id="helpClose">Start looking around</button>
+    </div>
+  </div>
+
+  <div class="err" id="err" hidden>
+    <h1>Couldn't load the room.</h1>
+    <p>Check your connection and give it another go.</p>
+    <button id="retry">Reload</button>
+  </div>
+
+  <a class="badge" href="https://wearedogs.net" aria-label="This product was made by DOGS">
+    <img src="./badge/made-by-dogs.webp" alt="Made by DOGS" width="440" height="120" />
+  </a>
+
+  <script>
+    /* If the 3D engine modules never boot (vendored files missing, WebGL blocked),
+       don't leave the loader spinning forever — show the reload card instead. */
+    setTimeout(function () {
+      if (!window.__tourBooted) {
+        var l = document.getElementById('loader');
+        if (l) l.style.display = 'none';
+        var e = document.getElementById('err');
+        if (e) e.hidden = false;
+      }
+    }, 20000);
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    window.__tourBooted = true;
+
+    const $ = (id) => document.getElementById(id);
+    const stage = $('stage'), loader = $('loader'), fill = $('fill'), pct = $('pct'),
+          hint = $('hint'), help = $('help'), err = $('err'),
+          mExplore = $('mExplore'), mWalk = $('mWalk'), dollBtn = $('doll'),
+          fsBtn = $('fs'), dot = $('dot'), stick = $('stick'), knob = $('knob'),
+          minimap = $('minimap'), mmc = $('mmc');
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function fatal(e) {
+      console.error('tour init failed', e);
+      loader.style.display = 'none';
+      err.hidden = false;
+    }
+
+    /* ---------- three.js core ---------- */
+    let renderer, scene, camera, controls;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    } catch (e) { fatal(e); throw e; }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); /* fill-rate headroom on phones */
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    stage.appendChild(renderer.domElement);
+
+    scene = new THREE.Scene();
+    const spark = new SparkRenderer({ renderer });
+    scene.add(spark); /* hooks its own per-frame update via onBeforeRender */
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 1.2, 0);
+
+    const SPAWN = { pos: [0, 1.6, 5], yaw: 0, pitch: -0.08 };
+    const DOLL = { pos: [0, 13, 13], look: [0, 0.5, 0] };
+    const BOUND = 6;            /* walk radius around spawn — quality falls off past the capture path */
+    const SPEED = 2.4;          /* units per second */
+    let mode = 'explore';       /* explore | walk | dollhouse */
+    let yaw = SPAWN.yaw, pitch = SPAWN.pitch;
+    let flying = false, lastT = 0;
+    let savedPose = null;       /* where dollhouse flies back to */
+    const keys = new Set();
+    const joy = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
+    let lookId = null, lookX = 0, lookY = 0;
+
+    camera.position.set(...SPAWN.pos);
+    camera.lookAt(controls.target);
+    controls.update();
+
+    const HINTS = {
+      explore: isTouch ? 'Drag to look around. Pinch to zoom.' : 'Drag to orbit. Scroll to zoom. Right-drag to pan.',
+      walk: isTouch ? 'Left thumb moves. Right thumb looks.' : 'WASD or arrows to move. Drag to look.',
+      dollhouse: isTouch ? 'Drag to orbit. Pinch to zoom.' : 'Drag to orbit. Scroll to zoom.',
+    };
+    function showHint(text) {
+      hint.textContent = text;
+      hint.classList.remove('gone');
+      clearTimeout(showHint.t);
+      showHint.t = setTimeout(() => hint.classList.add('gone'), 5200);
+    }
+
+    /* ---------- camera flights (dollhouse) ---------- */
+    function flyTo(posArr, lookArr, dur, done) {
+      const p0 = camera.position.clone();
+      const l0 = new THREE.Vector3();
+      if (mode === 'walk') {
+        camera.getWorldDirection(l0);
+        l0.multiplyScalar(3).add(camera.position);
+      } else {
+        l0.copy(controls.target);
+      }
+      const p1 = new THREE.Vector3(...posArr), l1 = new THREE.Vector3(...lookArr);
+      const look = new THREE.Vector3();
+      const t0 = performance.now();
+      flying = true;
+      controls.enabled = false;
+      function step(t) {
+        const k = Math.min((t - t0) / dur, 1);
+        const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        camera.position.lerpVectors(p0, p1, e);
+        look.lerpVectors(l0, l1, e);
+        camera.lookAt(look);
+        if (k < 1) requestAnimationFrame(step);
+        else { flying = false; done && done(); }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function enterDollhouse() {
+      if (flying) return;
+      savedPose = mode === 'walk'
+        ? { mode: 'walk', pos: camera.position.clone(), yaw, pitch }
+        : { mode: 'explore', pos: camera.position.clone(), target: controls.target.clone() };
+      mode = 'dollhouse';
+      dot.classList.remove('on');
+      stick.style.display = 'none';
+      minimap.classList.remove('on');
+      hint.classList.remove('above-map');
+      mExplore.setAttribute('aria-pressed', 'false');
+      mWalk.setAttribute('aria-pressed', 'false');
+      dollBtn.setAttribute('aria-pressed', 'true');
+      flyTo(DOLL.pos, DOLL.look, 1000, () => {
+        controls.target.set(...DOLL.look);
+        controls.enabled = true;
+        controls.update();
+      });
+      showHint(HINTS.dollhouse);
+    }
+
+    function exitDollhouse(toMode) {
+      if (flying || mode !== 'dollhouse') return;
+      dollBtn.setAttribute('aria-pressed', 'false');
+      const s = savedPose;
+      const target = (toMode === 'walk' || (!toMode && s && s.mode === 'walk')) ? 'walk' : 'explore';
+      if (target === 'walk' && s) {
+        const fwd = new THREE.Vector3(-Math.sin(s.yaw), Math.tan(s.pitch), -Math.cos(s.yaw));
+        const look = s.pos.clone().addScaledVector(fwd.normalize(), 3);
+        yaw = s.yaw; pitch = s.pitch;
+        flyTo(s.pos.toArray(), look.toArray(), 1000, () => applyMode('walk', true));
+      } else {
+        const tgt = (s && s.target ? s.target : new THREE.Vector3(0, 1.2, 0));
+        const pos = (s && s.pos ? s.pos.toArray() : SPAWN.pos);
+        flyTo(pos, tgt.toArray(), 1000, () => applyMode('explore', true));
+      }
+    }
+
+    function setMode(next, keepPose = false) {
+      if (flying || mode === next) return;
+      if (mode === 'dollhouse') { exitDollhouse(next); return; }
+      applyMode(next, keepPose);
+    }
+
+    function applyMode(next, keepPose = false) {
+      mode = next;
+      mExplore.setAttribute('aria-pressed', String(next === 'explore'));
+      mWalk.setAttribute('aria-pressed', String(next === 'walk'));
+      if (next === 'walk') {
+        controls.enabled = false;
+        if (!keepPose) {
+          camera.position.set(...SPAWN.pos);
+          yaw = SPAWN.yaw; pitch = SPAWN.pitch;
+        }
+        camera.rotation.order = 'YXZ';
+        camera.rotation.set(pitch, yaw, 0);
+        dot.classList.add('on');
+        minimap.classList.add('on');
+        hint.classList.add('above-map');
+        lastT = performance.now();
+      } else {
+        dot.classList.remove('on');
+        stick.style.display = 'none';
+        minimap.classList.remove('on');
+        hint.classList.remove('above-map');
+        if (!keepPose) {
+          /* re-aim orbit target a few units ahead so the room stays framed */
+          const fwd = new THREE.Vector3();
+          camera.getWorldDirection(fwd);
+          controls.target.copy(camera.position).addScaledVector(fwd, 3);
+        } else if (savedPose && savedPose.target) {
+          controls.target.copy(savedPose.target);
+        }
+        controls.enabled = true;
+        controls.update();
+      }
+      showHint(HINTS[next]);
+    }
+    mExplore.addEventListener('click', () => {
+      if (mode === 'dollhouse') exitDollhouse('explore'); else setMode('explore');
+    });
+    mWalk.addEventListener('click', () => {
+      if (mode === 'dollhouse') exitDollhouse('walk'); else setMode('walk');
+    });
+    dollBtn.addEventListener('click', () => {
+      if (mode === 'dollhouse') exitDollhouse(); else enterDollhouse();
+    });
+
+    /* ----- walk step: runs inside the main render loop ----- */
+    const mm = mmc.getContext('2d');
+    mm.scale(2, 2); /* 240px backing store, 120px CSS */
+    function drawMinimap() {
+      const S = 120, pad = 12;
+      const scale = (S - pad * 2) / (BOUND * 2);
+      mm.clearRect(0, 0, S, S);
+      /* navigable bounds */
+      mm.beginPath();
+      mm.arc(S / 2, S / 2, BOUND * scale, 0, Math.PI * 2);
+      mm.strokeStyle = 'rgba(245,242,234,.28)';
+      mm.lineWidth = 1;
+      mm.stroke();
+      /* spawn tick */
+      mm.beginPath();
+      mm.arc(S / 2, S / 2, 2, 0, Math.PI * 2);
+      mm.fillStyle = 'rgba(168,162,154,.7)';
+      mm.fill();
+      /* player: world xz -> map (up = -z) */
+      const px = S / 2 + (camera.position.x - SPAWN.pos[0]) * scale;
+      const py = S / 2 + (camera.position.z - SPAWN.pos[2]) * scale;
+      const theta = Math.atan2(-Math.sin(yaw), -Math.cos(yaw)); /* facing, from up, clockwise */
+      const fov = 0.52, L = 30;
+      mm.beginPath();
+      mm.moveTo(px, py);
+      mm.lineTo(px + L * Math.sin(theta - fov), py - L * Math.cos(theta - fov));
+      mm.lineTo(px + L * Math.sin(theta + fov), py - L * Math.cos(theta + fov));
+      mm.closePath();
+      mm.fillStyle = 'rgba(242,178,52,.28)';
+      mm.fill();
+      mm.beginPath();
+      mm.arc(px, py, 3.5, 0, Math.PI * 2);
+      mm.fillStyle = '#f2b234';
+      mm.fill();
+    }
+
+    function walkStep(t) {
+      const dt = Math.min((t - lastT) / 1000, 0.05);
+      lastT = t;
+      let mx = 0, mz = 0;
+      if (keys.has('KeyW') || keys.has('ArrowUp')) mz += 1;
+      if (keys.has('KeyS') || keys.has('ArrowDown')) mz -= 1;
+      if (keys.has('KeyA') || keys.has('ArrowLeft')) mx -= 1;
+      if (keys.has('KeyD') || keys.has('ArrowRight')) mx += 1;
+      if (joy.active) { mx += joy.dx; mz -= joy.dy; }
+      const len = Math.hypot(mx, mz);
+      if (len > 0.01) {
+        const s = Math.min(len, 1) * SPEED * dt;
+        const sin = Math.sin(yaw), cos = Math.cos(yaw);
+        camera.position.x += (mx * cos - mz * sin) * s;
+        camera.position.z += (-mx * sin - mz * cos) * s;
+        /* gentle clamp: never walk into the void where the scan falls apart */
+        const dx = camera.position.x - SPAWN.pos[0], dz = camera.position.z - SPAWN.pos[2];
+        const d = Math.hypot(dx, dz);
+        if (d > BOUND) {
+          camera.position.x = SPAWN.pos[0] + (dx / d) * BOUND;
+          camera.position.z = SPAWN.pos[2] + (dz / d) * BOUND;
+        }
+        camera.position.y = SPAWN.pos[1];
+      }
+      camera.rotation.set(pitch, yaw, 0);
+      drawMinimap();
+    }
+
+    /* ----- main loop: we own it ----- */
+    function frame(t) {
+      requestAnimationFrame(frame);
+      if (!flying && mode === 'walk') walkStep(t);
+      if (controls.enabled) controls.update();
+      renderer.render(scene, camera);
+    }
+
+    addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    addEventListener('keydown', (e) => {
+      if (mode !== 'walk') return;
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+      keys.add(e.code);
+    });
+    addEventListener('keyup', (e) => keys.delete(e.code));
+    addEventListener('blur', () => keys.clear());
+
+    /* look: mouse drag anywhere on canvas in walk mode; touch split by half */
+    stage.addEventListener('pointerdown', (e) => {
+      if (mode !== 'walk') return;
+      if (e.pointerType === 'touch') {
+        if (e.clientX < innerWidth / 2 && !joy.active) {
+          joy.active = true; joy.id = e.pointerId;
+          joy.ox = e.clientX; joy.oy = e.clientY; joy.dx = 0; joy.dy = 0;
+          stick.style.display = 'block';
+          stick.style.left = joy.ox + 'px'; stick.style.top = joy.oy + 'px';
+          knob.style.transform = 'translate(0px,0px)';
+        } else if (lookId === null) {
+          lookId = e.pointerId; lookX = e.clientX; lookY = e.clientY;
+        }
+      } else {
+        lookId = e.pointerId; lookX = e.clientX; lookY = e.clientY;
+      }
+    });
+    stage.addEventListener('pointermove', (e) => {
+      if (mode !== 'walk') return;
+      if (e.pointerId === lookId) {
+        const sens = 0.0042;
+        yaw -= (e.clientX - lookX) * sens;
+        pitch -= (e.clientY - lookY) * sens;
+        pitch = Math.max(-1.45, Math.min(1.45, pitch));
+        lookX = e.clientX; lookY = e.clientY;
+      } else if (joy.active && e.pointerId === joy.id) {
+        const R = 44;
+        let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
+        const d = Math.hypot(dx, dy);
+        if (d > R) { dx = dx / d * R; dy = dy / d * R; }
+        joy.dx = dx / R; joy.dy = dy / R;
+        knob.style.transform = `translate(${dx}px,${dy}px)`;
+      }
+    });
+    const endPointer = (e) => {
+      if (e.pointerId === lookId) lookId = null;
+      if (joy.active && e.pointerId === joy.id) {
+        joy.active = false; joy.id = null; joy.dx = 0; joy.dy = 0;
+        stick.style.display = 'none';
+      }
+    };
+    stage.addEventListener('pointerup', endPointer);
+    stage.addEventListener('pointercancel', endPointer);
+
+    /* ----- fullscreen ----- */
+    fsBtn.addEventListener('click', async () => {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch (e) { /* not supported — page still works */ }
+    });
+    document.addEventListener('fullscreenchange', () => {
+      fsBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
+    });
+
+    /* ----- help overlay ----- */
+    function closeHelp() {
+      if (reduceMotion) help.hidden = true;
+      else { help.classList.add('fading'); setTimeout(() => { help.hidden = true; help.classList.remove('fading'); }, 380); }
+    }
+    $('helpClose').addEventListener('click', closeHelp);
+    $('helpBtn').addEventListener('click', () => { help.hidden = false; });
+    help.addEventListener('pointerdown', (e) => { if (e.target === help) closeHelp(); });
+
+    $('retry').addEventListener('click', () => location.reload());
+
+    /* ----- load the room ----- */
+    requestAnimationFrame(frame);
+    try {
+      const splat = new SplatMesh({
+        url: './assets/splat_quest.ply',
+        onProgress: (e) => {
+          if (e && e.lengthComputable && e.total > 0) {
+            const p = Math.round(e.loaded / e.total * 100);
+            fill.style.width = p + '%';
+            pct.textContent = p >= 100 ? 'Putting the room together…' : `Loading the room — ${p}%`;
+          }
+        },
+      });
+      scene.add(splat);
+      await splat.initialized;
+      loader.classList.add('done');
+      if (reduceMotion) loader.remove();
+      else setTimeout(() => loader.remove(), 600);
+      showHint(HINTS.explore);
+      setTimeout(() => {
+        try {
+          if (!sessionStorage.getItem('wt-help')) { help.hidden = false; sessionStorage.setItem('wt-help', '1'); }
+        } catch (e) { help.hidden = false; }
+      }, 700);
+    } catch (e) {
+      fatal(e);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0a0c" />
+<title>Walkthru Studio</title>
+<meta name="description" content="Walkthru Studio: cut a shot list from listing photos, preview the motion, queue exports." />
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" />
+<style>
+:root{
+  --ink:#0a0a0c; --paper:#f5f2ea; --muted:#a8a29a; --gold:#f2b234;
+  --hair:rgba(245,242,234,.12); --hair2:rgba(245,242,234,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ink); color:var(--paper);
+  font-family:'Space Grotesk',system-ui,-apple-system,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{max-width:46rem;margin:0 auto;padding:0 1.1rem}
+a{color:var(--gold)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* header */
+.top{padding:1rem 0 0}
+.back{
+  display:inline-flex;align-items:center;min-height:44px;
+  color:var(--muted);text-decoration:none;font-size:.92rem;
+}
+.back:hover{color:var(--paper)}
+.hero{padding:.6rem 0 1.4rem}
+.kicker{
+  font-size:.75rem;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--gold);font-weight:600;margin:0 0 .5rem;
+}
+h1{
+  font-size:clamp(2.1rem,9vw,3.4rem);line-height:.98;letter-spacing:-.02em;
+  margin:0 0 .7rem;font-weight:700;
+}
+.sub{color:var(--muted);line-height:1.55;margin:0;max-width:34rem}
+
+/* sections */
+section{padding:1.7rem 0;border-top:1px solid var(--hair);margin-top:1.2rem}
+h2{font-size:1.35rem;margin:0 0 .35rem;letter-spacing:-.01em;font-weight:700}
+h3{font-size:1.02rem;margin:1.4rem 0 .6rem;font-weight:600}
+.note{color:var(--muted);font-size:.86rem;line-height:1.55;margin:0 0 1rem;max-width:36rem}
+
+/* shot list */
+#shotList{list-style:none;margin:0 0 .8rem;padding:0}
+.shot{
+  display:flex;gap:.75rem;align-items:center;
+  padding:.65rem 0;border-top:1px solid var(--hair2);
+}
+.shot img{
+  width:78px;height:54px;object-fit:cover;border-radius:7px;flex:none;
+  background:#17171b;
+}
+.shot-body{flex:1;min-width:0}
+.shot-name{font-size:.92rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shot-ctl{display:flex;gap:.4rem;align-items:center;margin-top:.45rem;flex-wrap:wrap}
+.ibtn{
+  min-width:44px;min-height:44px;border:1px solid var(--hair);border-radius:11px;
+  background:transparent;color:var(--paper);font-size:1.05rem;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;padding:0 .5rem;
+  font-family:inherit;
+}
+.ibtn:hover{border-color:var(--gold);color:var(--gold)}
+.ibtn:disabled{opacity:.3;cursor:default}
+.ibtn:disabled:hover{border-color:var(--hair);color:var(--paper)}
+.dur{display:inline-flex;align-items:center;gap:.15rem}
+.dur .ibtn{min-width:44px;font-size:1.2rem}
+.dur span{min-width:3.2rem;text-align:center;font-size:.88rem;color:var(--paper)}
+select{
+  min-height:44px;background:#141416;color:var(--paper);
+  border:1px solid var(--hair);border-radius:11px;font:inherit;font-size:.86rem;
+  padding:0 .6rem;max-width:100%;
+}
+.rm{
+  margin-left:auto;min-height:44px;min-width:44px;border:1px solid var(--hair);
+  border-radius:11px;background:transparent;color:var(--muted);cursor:pointer;
+  font-size:.8rem;padding:0 .7rem;font-family:inherit;
+}
+.rm:hover{color:#ff8a8a;border-color:#ff8a8a}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-top:.4rem}
+.btn{
+  min-height:44px;border:1px solid var(--hair);border-radius:999px;
+  background:transparent;color:var(--paper);font:inherit;font-size:.9rem;
+  padding:0 1.2rem;cursor:pointer;display:inline-flex;align-items:center;
+}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#161616;font-weight:600}
+.btn.gold:hover{color:#000}
+.btn:disabled{opacity:.4;cursor:default}
+.filebtn{cursor:pointer}
+.filebtn input{position:absolute;opacity:0;pointer-events:none}
+
+/* preview */
+.stage{position:relative;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--hair2)}
+.stage canvas{display:block;width:100%;aspect-ratio:16/9}
+.pbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.14)}
+.pbar i{display:block;height:100%;width:0;background:var(--gold);transform-origin:left}
+.prow{display:flex;align-items:center;gap:.8rem;margin-top:.7rem}
+#pstat{color:var(--muted);font-size:.85rem}
+
+/* providers */
+.adap{padding:.9rem 0;border-top:1px solid var(--hair2)}
+.adap-top{display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+.adap-name{font-weight:600;font-size:1rem}
+.adap-tag{
+  font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);border:1px solid var(--hair);border-radius:999px;padding:.2rem .6rem;
+}
+.adap-tag.off{color:#ff8a8a;border-color:rgba(255,138,138,.4)}
+.adap p{margin:.35rem 0 .7rem;color:var(--muted);font-size:.86rem;line-height:1.5}
+.adap.off{opacity:.55}
+.keyrow{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.keyrow input{
+  flex:1;min-width:12rem;min-height:44px;background:#141416;color:var(--paper);
+  border:1px solid var(--hair);border-radius:11px;font:inherit;font-size:.86rem;padding:0 .8rem;
+}
+.keystate{font-size:.78rem;color:var(--gold);min-height:1.2em}
+.vault{
+  margin-top:1.1rem;padding:1rem 1.1rem;border:1px solid var(--hair);border-radius:12px;
+  color:var(--muted);font-size:.84rem;line-height:1.6;background:rgba(255,255,255,.02);
+}
+
+/* export */
+.matrix{display:grid;gap:.7rem;margin-bottom:1rem}
+.matrix label{display:grid;gap:.3rem;font-size:.82rem;color:var(--muted)}
+.honest{
+  margin:1rem 0 0;padding:.9rem 1rem;border-left:2px solid var(--gold);
+  color:var(--muted);font-size:.84rem;line-height:1.6;background:rgba(242,178,52,.05);
+  border-radius:0 10px 10px 0;
+}
+#jobs{list-style:none;margin:0;padding:0}
+.job{
+  padding:.8rem 0;border-top:1px solid var(--hair2);
+  display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;
+}
+.job-info{flex:1;min-width:10rem}
+.job-name{font-size:.92rem;font-weight:500}
+.job-state{font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.job-state.ok{color:var(--gold)}
+.job a.dl{
+  min-height:44px;display:inline-flex;align-items:center;padding:0 1.1rem;
+  border:1px solid var(--gold);border-radius:999px;color:var(--gold);
+  text-decoration:none;font-size:.85rem;
+}
+.empty{color:var(--muted);font-size:.86rem;padding:.6rem 0}
+
+/* badge */
+footer{padding:2.2rem 0 3rem;text-align:center}
+.badge{display:block;width:220px;max-width:60vw;margin:0 auto;line-height:0}
+.badge img{width:100%;height:auto;display:block;border-radius:6px}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="back" href="./">&#8592; Walkthru</a></div>
+  <header class="hero">
+    <p class="kicker">Walkthru Studio</p>
+    <h1>Your photos. In motion.</h1>
+    <p class="sub">Cut the shot list, preview the moves, queue the exports. Demo build: the storyboard and preview renders run here. Final video comes from a provider or your own pipeline.</p>
+  </header>
+</div>
+<main class="wrap">
+
+  <section id="shots">
+    <h2>Shot list</h2>
+    <p class="note">Demo photos ship with the page. Order them with the arrows, set seconds per shot, pick the camera move.</p>
+    <ol id="shotList"></ol>
+    <div class="row">
+      <label class="btn filebtn">Add photos<input id="addFiles" type="file" accept="image/*" multiple /></label>
+      <button class="btn" id="resetShots" type="button">Restore demo shots</button>
+    </div>
+  </section>
+
+  <section id="preview">
+    <h2>Preview</h2>
+    <p class="note">Storyboard playback. Ken Burns moves only, in the order above.</p>
+    <div class="stage">
+      <canvas id="stage" width="960" height="540"></canvas>
+      <div class="pbar"><i id="pfill"></i></div>
+    </div>
+    <div class="prow">
+      <button class="btn gold" id="playBtn" type="button">Play</button>
+      <span id="pstat"></span>
+    </div>
+  </section>
+
+  <section id="providers">
+    <h2>Providers</h2>
+    <p class="note">Each adapter asks for its own key. Type it once, it stays in this browser.</p>
+    <div id="adapterList"></div>
+    <div class="vault">Keys live in this browser's storage. They go only to that provider's API. A production pipeline needs its own backend. This demo never claims otherwise.</div>
+  </section>
+
+  <section id="export">
+    <h2>Export</h2>
+    <div class="matrix">
+      <label>Format
+        <select id="fmt">
+          <option value="mp4">MP4</option>
+          <option value="mkv">MKV</option>
+          <option value="mov">MOV</option>
+          <option value="avi">AVI</option>
+        </select>
+      </label>
+      <label>Preset
+        <select id="preset">
+          <option value="tiktok">TikTok 1080x1920 (9:16)</option>
+          <option value="youtube">YouTube best</option>
+          <option value="4k">4K</option>
+          <option value="1080p">1080p</option>
+          <option value="720p">720p</option>
+          <option value="480p">480p</option>
+          <option value="360p">360p</option>
+        </select>
+      </label>
+      <label>Engine
+        <select id="engine">
+          <option value="kb">Ken Burns, in-browser</option>
+          <option value="fal">fal.ai</option>
+          <option value="higgsfield">Higgsfield</option>
+          <option value="veo">Google Veo</option>
+          <option value="claude">Claude (script only)</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <button class="btn" id="queueBtn" type="button">Queue job</button>
+      <button class="btn gold" id="queueBoth" type="button">Queue TikTok + YouTube</button>
+    </div>
+    <p class="honest">MP4, MKV, MOV, and AVI come out of the provider or backend pipeline. This page cannot transcode them in the browser.</p>
+    <h3>Job queue</h3>
+    <ol id="jobs"></ol>
+  </section>
+
+</main>
+
+<footer>
+  <a class="badge" href="https://wearedogs.net"><img src="./badge/made-by-dogs.webp" alt="Made by DOGS" /></a>
+</footer>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- shots ---------- */
+const DEMO = [
+  ['01-exterior.jpg', 'Exterior'],
+  ['02-living-room.jpg', 'Living room'],
+  ['03-kitchen.jpg', 'Kitchen'],
+  ['04-primary-bedroom.jpg', 'Primary bedroom'],
+  ['05-bathroom.jpg', 'Bathroom'],
+  ['06-dining-room.jpg', 'Dining room'],
+  ['07-guest-bedroom.jpg', 'Guest bedroom'],
+  ['08-backyard.jpg', 'Backyard'],
+];
+const MOVES = { in: 'Push in', out: 'Pull out', left: 'Pan left', right: 'Pan right' };
+let uid = 0;
+const demoShots = () => DEMO.map(([f, name]) => ({ id: ++uid, src: './dummy-listing/' + f, name, dur: 4, move: 'in' }));
+let shots = demoShots();
+
+function renderShots() {
+  const ol = $('shotList');
+  ol.innerHTML = '';
+  shots.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.className = 'shot';
+    const img = document.createElement('img');
+    img.src = s.src; img.alt = s.name; img.loading = 'lazy';
+    const body = document.createElement('div');
+    body.className = 'shot-body';
+    const name = document.createElement('div');
+    name.className = 'shot-name'; name.textContent = s.name;
+    const ctl = document.createElement('div');
+    ctl.className = 'shot-ctl';
+
+    const up = btn('↑', 'Move up', () => moveShot(i, -1));
+    up.disabled = i === 0;
+    const down = btn('↓', 'Move down', () => moveShot(i, 1));
+    down.disabled = i === shots.length - 1;
+
+    const dur = document.createElement('div');
+    dur.className = 'dur';
+    const minus = btn('−', 'Shorter', () => { s.dur = Math.max(1, s.dur - 1); stopPlay(); renderShots(); });
+    const dspan = document.createElement('span');
+    dspan.textContent = s.dur + 's';
+    const plus = btn('+', 'Longer', () => { s.dur = Math.min(12, s.dur + 1); stopPlay(); renderShots(); });
+    dur.append(minus, dspan, plus);
+
+    const sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Camera move for ' + s.name);
+    Object.entries(MOVES).forEach(([v, label]) => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = label;
+      if (s.move === v) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => { s.move = sel.value; stopPlay(); });
+
+    const rm = document.createElement('button');
+    rm.className = 'rm'; rm.type = 'button'; rm.textContent = 'Remove';
+    rm.setAttribute('aria-label', 'Remove ' + s.name);
+    rm.addEventListener('click', () => {
+      if (shots.length <= 1) return;
+      shots.splice(i, 1); stopPlay(); renderShots();
+    });
+
+    ctl.append(up, down, dur, sel, rm);
+    body.append(name, ctl);
+    li.append(img, body);
+    ol.appendChild(li);
+  });
+  updateTotal();
+}
+function btn(text, label, fn) {
+  const b = document.createElement('button');
+  b.className = 'ibtn'; b.type = 'button'; b.textContent = text;
+  b.setAttribute('aria-label', label);
+  b.addEventListener('click', fn);
+  return b;
+}
+function moveShot(i, d) {
+  const j = i + d;
+  if (j < 0 || j >= shots.length) return;
+  [shots[i], shots[j]] = [shots[j], shots[i]];
+  stopPlay(); renderShots();
+}
+function totalDur(list) { return list.reduce((a, s) => a + s.dur, 0); }
+function updateTotal() {
+  $('pstat').textContent = shots.length + ' shots · ' + totalDur(shots) + 's total';
+}
+
+$('addFiles').addEventListener('change', (e) => {
+  [...e.target.files].forEach((f) => {
+    if (!f.type.startsWith('image/')) return;
+    shots.push({ id: ++uid, src: URL.createObjectURL(f), name: f.name.replace(/\.[^.]+$/, ''), dur: 4, move: 'in' });
+  });
+  e.target.value = '';
+  stopPlay(); renderShots();
+});
+$('resetShots').addEventListener('click', () => { shots = demoShots(); stopPlay(); renderShots(); });
+
+/* ---------- Ken Burns preview engine ---------- */
+const canvas = $('stage');
+const ctx = canvas.getContext('2d');
+const CW = 960, CH = 540;
+const imgCache = new Map();
+function loadImg(src) {
+  if (imgCache.has(src)) return imgCache.get(src);
+  const p = new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = rej;
+    im.src = src;
+  });
+  imgCache.set(src, p);
+  return p;
+}
+
+const player = { playing: false, list: null, idx: 0, shotStart: 0, raf: 0, onDone: null, elapsedBefore: 0 };
+
+function drawMove(img, move, t) {
+  const scale = Math.max(CW / img.width, CH / img.height);
+  let z0 = 1, z1 = 1, x0 = 0, x1 = 0;
+  if (move === 'in') { z1 = 1.18; }
+  else if (move === 'out') { z0 = 1.18; }
+  else if (move === 'left') { z0 = z1 = 1.18; x0 = 0.05; x1 = -0.05; }
+  else if (move === 'right') { z0 = z1 = 1.18; x0 = -0.05; x1 = 0.05; }
+  if (reduced) { z1 = z0; x1 = x0; t = 0; }
+  const z = z0 + (z1 - z0) * t;
+  const x = (x0 + (x1 - x0) * t) * CW;
+  const w = img.width * scale * z, h = img.height * scale * z;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, CW, CH);
+  ctx.drawImage(img, (CW - w) / 2 + x, (CH - h) / 2, w, h);
+}
+
+function tick(now) {
+  const p = player;
+  if (!p.playing) return;
+  const shot = p.list[p.idx];
+  const img = p.imgs[p.idx];
+  const el = (now - p.shotStart) / 1000;
+  const t = Math.min(el / shot.dur, 1);
+  drawMove(img, shot.move, t);
+  const total = totalDur(p.list);
+  const done = Math.min(p.elapsedBefore + el, total);
+  $('pfill').style.width = (100 * done / total) + '%';
+  $('pstat').textContent = (p.idx + 1) + ' / ' + p.list.length + ' · ' + shot.name;
+  if (t >= 1) {
+    p.elapsedBefore += shot.dur;
+    p.idx++;
+    if (p.idx >= p.list.length) { finishPlay(); return; }
+    p.shotStart = now;
+  }
+  p.raf = requestAnimationFrame(tick);
+}
+
+async function playShots(list, onDone) {
+  stopPlay();
+  const p = player;
+  p.list = list;
+  p.onDone = onDone || null;
+  try {
+    p.imgs = await Promise.all(list.map((s) => loadImg(s.src)));
+  } catch (e) {
+    $('pstat').textContent = 'A photo failed to load.';
+    return;
+  }
+  p.playing = true; p.idx = 0; p.elapsedBefore = 0;
+  p.shotStart = performance.now();
+  $('playBtn').textContent = 'Pause';
+  p.raf = requestAnimationFrame(tick);
+}
+function stopPlay() {
+  const p = player;
+  if (p.raf) cancelAnimationFrame(p.raf);
+  const was = p.playing;
+  p.playing = false; p.raf = 0; p.onDone = null;
+  if (was) { $('playBtn').textContent = 'Play'; updateTotal(); }
+}
+function finishPlay() {
+  const p = player;
+  p.playing = false; p.raf = 0;
+  $('playBtn').textContent = 'Replay';
+  $('pfill').style.width = '100%';
+  const cb = p.onDone; p.onDone = null;
+  if (cb) cb();
+}
+$('playBtn').addEventListener('click', () => {
+  if (player.playing) { stopPlay(); return; }
+  playShots(shots);
+});
+
+/* ---------- providers ---------- */
+const PROVIDERS = [
+  { id: 'fal', name: 'fal.ai', tag: 'AI video', line: 'AI video generation. API key required, pay as you go.' },
+  { id: 'higgsfield', name: 'Higgsfield', tag: 'AI video', line: 'AI video generation. API key required.' },
+  { id: 'veo', name: 'Google Veo', tag: 'AI video', line: 'AI video generation. API key required.' },
+  { id: 'claude', name: 'Claude', tag: 'Script only', line: 'Prompt and script orchestration only. Not a video generator.' },
+  { id: 'meta', name: 'Meta', tag: 'Disabled', line: 'No verified endpoint. Disabled.', disabled: true },
+];
+const keyOf = (id) => 'walkthru.key.' + id;
+const hasKey = (id) => { try { return !!(localStorage.getItem(keyOf(id)) || '').trim(); } catch (e) { return false; } };
+
+function renderProviders() {
+  const wrap = $('adapterList');
+  wrap.innerHTML = '';
+  PROVIDERS.forEach((pr) => {
+    const d = document.createElement('div');
+    d.className = 'adap' + (pr.disabled ? ' off' : '');
+    const top = document.createElement('div');
+    top.className = 'adap-top';
+    const nm = document.createElement('span');
+    nm.className = 'adap-name'; nm.textContent = pr.name;
+    const tag = document.createElement('span');
+    tag.className = 'adap-tag' + (pr.disabled ? ' off' : '');
+    tag.textContent = pr.tag;
+    top.append(nm, tag);
+    const line = document.createElement('p');
+    line.textContent = pr.line;
+    d.append(top, line);
+    if (!pr.disabled) {
+      const row = document.createElement('div');
+      row.className = 'keyrow';
+      const input = document.createElement('input');
+      input.type = 'password';
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      input.placeholder = pr.name + ' API key';
+      input.setAttribute('aria-label', pr.name + ' API key');
+      const st = document.createElement('span');
+      st.className = 'keystate';
+      const saved = hasKey(pr.id);
+      if (saved) { input.value = '••••••••'; st.textContent = 'Saved in this browser.'; }
+      input.addEventListener('focus', () => { if (hasKey(pr.id) && input.value === '••••••••') input.value = ''; });
+      input.addEventListener('input', () => {
+        try {
+          if (input.value.trim()) { localStorage.setItem(keyOf(pr.id), input.value.trim()); st.textContent = 'Saved in this browser.'; }
+          else { localStorage.removeItem(keyOf(pr.id)); st.textContent = ''; }
+        } catch (e) { st.textContent = 'Storage blocked in this browser.'; }
+        renderJobs();
+      });
+      row.append(input, st);
+      d.appendChild(row);
+    }
+    wrap.appendChild(d);
+  });
+}
+
+/* ---------- export queue ---------- */
+const PRESETS = {
+  tiktok: 'TikTok 1080x1920 (9:16)',
+  youtube: 'YouTube best',
+  '4k': '4K 3840x2160',
+  '1080p': '1080p 1920x1080',
+  '720p': '720p 1280x720',
+  '480p': '480p 854x480',
+  '360p': '360p 640x360',
+};
+const ENGINES = { kb: 'Ken Burns', fal: 'fal.ai', higgsfield: 'Higgsfield', veo: 'Google Veo', claude: 'Claude' };
+let jobs = [];
+let jid = 0;
+
+function snapshot(list) {
+  return list.map((s) => ({ src: s.src, name: s.name, dur: s.dur, move: s.move }));
+}
+function queueJob(fmt, preset, engine) {
+  jobs.push({
+    id: ++jid, fmt: fmt.toUpperCase(), preset, engine,
+    shots: snapshot(shots), state: 'new', link: null,
+  });
+  renderJobs();
+}
+function providerState(job) {
+  if (job.engine === 'kb') return null;
+  return hasKey(job.engine) ? 'Key saved. Generation is not wired in this demo.' : 'Queued. Needs an API key.';
+}
+
+function renderJobs() {
+  const ol = $('jobs');
+  ol.innerHTML = '';
+  if (!jobs.length) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'Nothing queued yet.';
+    ol.appendChild(li);
+    return;
+  }
+  jobs.forEach((job) => {
+    const li = document.createElement('li');
+    li.className = 'job';
+    const info = document.createElement('div');
+    info.className = 'job-info';
+    const nm = document.createElement('div');
+    nm.className = 'job-name';
+    nm.textContent = PRESETS[job.preset] + ' · ' + job.fmt + ' · ' + ENGINES[job.engine];
+    const st = document.createElement('div');
+    st.className = 'job-state' + (job.state === 'done' ? ' ok' : '');
+    info.append(nm, st);
+    li.appendChild(info);
+
+    if (job.engine === 'kb') {
+      if (job.state === 'done' && job.link) {
+        st.textContent = 'Preview render. WebM, in-browser.';
+        const a = document.createElement('a');
+        a.className = 'dl'; a.href = job.link;
+        a.download = 'walkthru-preview-' + job.id + '.webm';
+        a.textContent = 'Download preview (WebM)';
+        li.appendChild(a);
+      } else if (job.state === 'rendering') {
+        st.textContent = 'Rendering preview…';
+      } else {
+        st.textContent = 'Ready. Renders in this browser.';
+        const b = document.createElement('button');
+        b.className = 'btn'; b.type = 'button'; b.textContent = 'Render preview';
+        b.addEventListener('click', () => renderPreview(job, b));
+        li.appendChild(b);
+      }
+    } else {
+      st.textContent = providerState(job);
+    }
+    const del = document.createElement('button');
+    del.className = 'rm'; del.type = 'button'; del.textContent = 'Remove';
+    del.setAttribute('aria-label', 'Remove job ' + job.id);
+    del.addEventListener('click', () => { jobs = jobs.filter((j) => j.id !== job.id); renderJobs(); });
+    li.appendChild(del);
+    ol.appendChild(li);
+  });
+}
+
+$('queueBtn').addEventListener('click', () => {
+  queueJob($('fmt').value, $('preset').value, $('engine').value);
+});
+$('queueBoth').addEventListener('click', () => {
+  const eng = $('engine').value;
+  const provider = eng === 'kb' ? 'fal' : eng;
+  queueJob('mp4', 'tiktok', provider);
+  queueJob('mp4', 'youtube', provider);
+});
+
+/* Ken Burns job: capture the live preview to WebM via MediaRecorder */
+let stream = null;
+async function renderPreview(job, btnEl) {
+  if (job.state === 'rendering') return;
+  job.state = 'rendering';
+  renderJobs();
+  $('playBtn').disabled = true;
+  try {
+    if (!stream) stream = canvas.captureStream(30);
+    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+    const rec = new MediaRecorder(stream, { mimeType: mime });
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise((res) => { rec.onstop = res; });
+    rec.start(250);
+    await playShots(job.shots, null);
+    if (!player.playing) throw new Error('playback failed');
+    await new Promise((res) => {
+      const prev = player.onDone;
+      player.onDone = () => { if (prev) prev(); res(); };
+    });
+    rec.stop();
+    await stopped;
+    job.link = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
+    job.state = 'done';
+  } catch (e) {
+    job.state = 'new';
+  }
+  stopPlay();
+  $('playBtn').disabled = false;
+  $('playBtn').textContent = 'Play';
+  renderJobs();
+}
+
+/* ---------- init ---------- */
+renderShots();
+renderProviders();
+renderJobs();
+loadImg(shots[0].src).then((img) => drawMove(img, shots[0].move, 0)).catch(() => {});
+</script>
+</body>
+</html>
