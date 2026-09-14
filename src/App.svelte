@@ -48,7 +48,7 @@
 </script>
 
 <svelte:head>
-  <title>{PRODUCT_NAME} — Your space, in motion.</title>
+  <title>Walkthru - See It</title>
   <meta
     name="description"
     content="AI promo videos and interactive 3D tours for Airbnbs, wedding venues, and listings. Photos in. Bookings out."
